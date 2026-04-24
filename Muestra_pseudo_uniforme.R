@@ -69,7 +69,7 @@ ggplot(df, aes(x = muestra)) +
   labs(
     title = "Histograma muestra vs densidad teórica uniforme",
     x = "Valor",
-    y = "Densidad / Frecuencia normalizada",
+    y = "Densidad",
     fill = ""
   ) +
   
