@@ -98,7 +98,7 @@ ggplot(df_2, aes(x = muestra)) +
   labs(
     title = "Histograma muestra vs densidad teórica normal estándar",
     x = "Valor",
-    y = "Densidad / Frecuencia normalizada",
+    y = "Densidad",
     fill = ""
   ) +
   
