@@ -7,7 +7,7 @@ En el presente repositorio, se hallan configurados los scripts en el lenguaje de
 
 pertenecientes, respectivamente, a los capítulos 2 y 3 de la memoria TFG titulada *"El Método de Montecarlo: Una introducción a los números pseudoaleatorios aplicados a la integración unidimensional"* realizada por *A.J Vázquez Ramírez*.
 
-## Preliminares: Instalación del entorno de programación
+## Preliminares: instalación del entorno de programación
 
 Con la finalidad de que el lector pueda reproducir los resultados de las simulaciones en su entorno local, vamos a describir brevemente los elementos que conforman el entorno de programación *R* utilizado:
 
