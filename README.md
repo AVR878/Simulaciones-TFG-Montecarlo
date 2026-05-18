@@ -25,7 +25,7 @@ los cuales, respectivamente y siguiendo el orden expuesto, se descargan a travé
 
 Una vez tenemos instalado y configurado el entorno en nuestro equipo, podemos proceder con la descarga de todos los scripts **.R** de este repositorio para reproducir las simulaciones.
 
-En particultar, los cálculos de las simulaciones están representados por los siguientes conjuntos de scripts:
+En particular, los cálculos de las simulaciones están representados por los siguientes conjuntos de scripts:
 
 - **Simulación I**: *Muestra_pseudo_uniforme.R* y *Muestra_pseudo_normal.R*.
 - **Simulación II**: *Calculos_Simpson_simulacion_integral.R* y *Simulacion_Integral_Fresnel_coseno.R*.
