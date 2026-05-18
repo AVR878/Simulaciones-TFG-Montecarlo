@@ -23,7 +23,7 @@ los cuales, respectivamente y siguiendo el orden expuesto, se descargan a travé
 
 ## Ejecución de las simulaciones: pasos y recomendaciones
 
-Una vez tenemos instalado y configurado el entorno en nuestro equipo, podemos proceder con la descarga de todos los scripts **.R** de este repositorio para ejecutar las simulaciones.
+Una vez tenemos instalado y configurado el entorno en nuestro equipo, podemos proceder con la descarga de todos los scripts **.R** de este repositorio para reproducir las simulaciones.
 
 En particultar, los cálculos de las simulaciones están representados por los siguientes conjuntos de scripts:
 
