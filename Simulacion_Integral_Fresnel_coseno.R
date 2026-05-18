@@ -62,7 +62,7 @@ valor_real_integral=integrate(function(x){#Valor exacto de la integral de Fresne
 
 muestra_piloto_unif_classical=generador_congruencial(semilla = 5890,N=20000)
 
-#Y ahora estimamos la varianza con la imagenes de cos(x^2) mediante el estadístico varianza muestral que posee menor error cuandrático medio que la cuasivarianza muestral:
+#Y ahora estimamos la varianza con la imágenes de cos(x^2) mediante el estadístico varianza muestral que posee menor error cuandrático medio que la cuasivarianza muestral:
 
 imagenes_classical=cos(muestra_piloto_unif_classical^2)
 
