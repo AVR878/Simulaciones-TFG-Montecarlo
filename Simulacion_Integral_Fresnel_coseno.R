@@ -1,0 +1,507 @@
+#En primer lugar, instalamos, si hiciera falta, y cargamos las librerías necesarias:
+
+#INSTALACIÓN:
+
+paquetes <- c("dplyr","ggplot2","qqplotr","patchwork","nortest")
+
+faltan <- paquetes[!paquetes %in% installed.packages()[, "Package"]]
+if (length(faltan) > 0) install.packages(faltan)
+
+#CARGA:
+
+library(dplyr)
+library(ggplot2)
+library(qqplotr)
+library(patchwork)
+library(nortest)
+
+options(digits = 10)#Controlamos la precisión.
+
+
+#GENERADOR CONGRUENCIAL
+
+#Como vamos requerir de la generación de varias muestras uniformes entre 0 y 1, importamos el generador congruencial de la simulación I:
+
+generador_congruencial=function(a=39062953,c=37777373,M=2^32,semilla,N){#Definimos algunos parámetros por defecto para mayor comodidad
+  semilla=semilla %% M
+  muestra=c(semilla)
+  if(N>1){
+    for (i in 2:N) {
+      x=(a*semilla+c) %% M
+      muestra=c(muestra,x)
+      semilla=x
+    }
+  }
+  muestra=muestra/M 
+  return(muestra)
+}
+
+
+#PARÁMETROS COMUNES
+
+#Según nuestro diseño experimental, definimos los siguientes parámetros de uso común:
+
+n=6000#Tamaño máximo de las muestras.
+sizes=seq(1,n,by=10)#Conjunto de tamaños muestrales con tamaño de paso 10.
+cuantil=qnorm(1-0.05/2,mean = 0,sd=1)#Cuantil de la cota probabilística del error absoluto con un nivel de significación de 0.05.
+valor_real_integral=integrate(function(x){#Valor exacto de la integral de Fresnel C(1)
+  eval(expression(cos(x^2)),list(x=x))
+},0,1)$value
+
+
+
+#MÉTODO CLASSICAL MONTECARLO
+
+
+#1)Estimación varianza teórica Classical Montecarlo
+
+#A continuación, vamos a estimar la varianza teórica de la variable aletoria del método classical Montecarlo mediante una muestra piloto
+
+
+#Así pues, tengamos la siguiente muestra uniforme de tamaño 20000
+
+muestra_piloto_unif_classical=generador_congruencial(semilla = 5890,N=20000)
+
+#Y ahora estimamos la varianza con la imagenes de cos(x^2) mediante el estadístico varianza muestral que posee menor error cuandrático medio que la cuasivarianza muestral:
+
+imagenes_classical=cos(muestra_piloto_unif_classical^2)
+
+estimacion_varianza_classical=var(imagenes_classical)
+
+
+#2)Función classical Montecarlo
+
+#Definamos ahora la función que nos devuelva las estimaciones de la integral:
+
+classiccal_montecarlo=function(muestra_uniforme){
+  N=length(muestra_uniforme)
+  estimacion=(1/N)*sum(cos(muestra_uniforme^2))
+  return(estimacion)
+}
+
+
+#3)Cálculo estimaciones y errores
+
+#Ahora calculamos las estimaciones y errores eligiendo sistemáticamente las semillas en cada ejecución:
+
+vector_estimaciones_classical=c()
+errores_classical=c()
+
+for (i in sizes) {
+  estim_classical=classiccal_montecarlo(muestra_uniforme = generador_congruencial(semilla = 37*i,N=i))
+  error_classical=estim_classical-valor_real_integral
+  
+  vector_estimaciones_classical=c(vector_estimaciones_classical,estim_classical)
+  errores_classical=c(errores_classical,error_classical)
+  
+}
+
+
+#Ahora almacenamos la información en una tabla:
+
+datos_simulacion_classical=data.frame(Tamaños=sizes,
+                                      Estimacion=vector_estimaciones_classical,
+                                      Error=errores_classical)
+
+
+
+
+#MÉTODO VARIABLES ANTITÉTICAS
+
+
+#1)Estimación varianza teórica
+
+#Análogamente, vamos a estimar la varianza teórica mediante una muestra piloto de tamaño 20000
+
+muestra_piloto_unif_antitetica=generador_congruencial(semilla = 7000,N=20000)
+
+#Y ahora estimamos la varianza con las imágenes
+
+imagenes_antiteticas=(1/2)*(cos(muestra_piloto_unif_antitetica^2)+cos((1-muestra_piloto_unif_antitetica)^2))
+
+estimacion_varianza_antitetica=var(imagenes_antiteticas)
+
+
+
+#2)Función Variables Antitéticas
+
+#Definamos ahora la función que nos devuelva las estimaciones de la integral:
+
+antiteticas_montecarlo=function(muestra_uniforme){
+  N=length(muestra_uniforme)
+  estimacion=(1/(2*N))*sum(cos(muestra_uniforme^2))+(1/(2*N))*sum(cos((1-muestra_uniforme)^2))
+  return(estimacion)
+}
+
+
+#3)Cálculo estimaciones y errores
+
+#Ahora calculamos las estimaciones y errores eligiendo sistemáticamente las semillas en cada ejecución:
+
+vector_estimaciones_antiteticas=c()
+errores_antiteticas=c()
+
+for (i in sizes) {
+  estim_antiteticas=antiteticas_montecarlo(muestra_uniforme = generador_congruencial(semilla = 73*i,N=i))
+  error_antiteticas=estim_antiteticas-valor_real_integral
+  
+  vector_estimaciones_antiteticas=c(vector_estimaciones_antiteticas,estim_antiteticas)
+  errores_antiteticas=c(errores_antiteticas,error_antiteticas)
+  
+}
+
+
+#Ahora almacenamos la información en una tabla:
+
+datos_simulacion_antiteticas=data.frame(Tamaños=sizes,
+                                        Estimacion=vector_estimaciones_antiteticas,
+                                        Error=errores_antiteticas)
+
+
+
+#MÉTODO IMPORTANCE SAMPLING (MUESTREO POR IMPORTANCIA)
+
+
+#1)Densidad auxiliar
+
+
+#Declaramos la densidad auxiliar de la memoria:
+
+densidad_auxiliar=function(x){
+  y=(10/9)*(1-(1/2)*x^4)
+  return(y)
+}
+
+
+#2)Simulación Aceptación-Rechazo valores densidad auxiliar
+
+#A continuación, tenemos la versión computacional del Algoritmo 6 de la memoria:
+
+generador_auxiliar=function(muestra_uniforme,size){#size es el parámetro que indica cuántos valores queremos simular.
+  
+  muestra=c()#Vector que almacenará la muestra objetivo.
+  aceptados=0#Contador de aceptaciones.
+  k=0#Variable auxiliar para la selección de valores de la uniforme.
+  
+  for (i in 1:length(muestra_uniforme)) {
+    #Como necesitamos 2 valores de la uniforme para cada iteración, con la variable k seleccionamos los valores indexados por los pares: (1,2), (3,4),...
+    u=muestra_uniforme[i+k]
+    v=muestra_uniforme[i+k+1]
+    k=k+1
+    #Ahora evaluamos la condición de aceptación:
+    if(u<=1-(1/2)*v^4){
+      muestra=c(muestra,v)#Si se cumple, almacenamos el valor v.
+      aceptados=aceptados+1
+    }
+    if(aceptados>=size){#Si hemos llegado a la cantidad de valores deseados, salimos del bucle.
+      break
+    }
+  }
+  return(muestra)
+}
+
+
+#3)Estimación varianza teórica Importance Sampling
+
+#Una vez tenemos la capacidad de simular valores de la distribución auxiliar, vamos a estimar la varianza teórica
+
+#Teniendo en cuenta que el algoritmo 6 tiene una tasa de aceptación del 90% y que se requieren 2 valores de la uniforme por cada iteracción,
+#necesitamos, para una muestra de 20000 valores, aproximadamente 44444 valores de la uniforme. Para ir seguros, simularemos 50000.
+
+#Así pues, tenemos
+
+muestra_piloto_auxiliar_IS=generador_auxiliar(muestra_uniforme = generador_congruencial(semilla = 98765,N=50000),size = 20000)
+
+
+#Y ahora estimamos la varianza
+
+imagenes_IS=(cos(muestra_piloto_auxiliar_IS^2)/densidad_auxiliar(muestra_piloto_auxiliar_IS))
+estimacion_varianza_IS=var(imagenes_IS)
+
+
+
+#4)Función Importance Sampling
+
+#Definamos ahora la función que nos devuelva las estimaciones de la integral:
+
+importance_sampling_montecarlo=function(muestra,densidad=densidad_auxiliar){#Definimos el parámetro de la densidad por defecto por comodidad.
+  N=length(muestra)
+  estimacion=(1/N)*sum(cos(muestra^2)/densidad(muestra))
+  return(estimacion)
+}
+
+
+#5)Cálculo estimaciones y errores
+
+#Ahora calculamos las estimaciones y errores eligiendo sistemáticamente las semillas en cada ejecución:
+
+vector_estimaciones_IS=c()
+errores_IS=c()
+
+for (i in sizes) {
+  #Para obtener una muestra de la auxiliar de tamaño i, generamos una de la uniforme de tamaño 3i. Recordemos que la tasa de aceptación es del 90%.
+  estim_IS=importance_sampling_montecarlo(muestra = generador_auxiliar(muestra_uniforme = generador_congruencial(semilla = 29*i,N=3*i),size=i))
+  error_IS=estim_IS-valor_real_integral
+  
+  vector_estimaciones_IS=c(vector_estimaciones_IS,estim_IS)
+  errores_IS=c(errores_IS,error_IS)
+  
+}
+
+#Ahora almacenamos la información en una tabla:
+
+datos_simulacion_IS=data.frame(Tamaños=sizes,
+                               Estimacion=vector_estimaciones_IS,
+                               Error=errores_IS)
+
+
+#DATOS UNIFICADOS
+
+#Por tal de poder obtener una imagen visual de los resultados de las simulaciones, vamos a unificar los datos de los tres métodos:
+
+datos_unificados_error <- bind_rows(
+  datos_simulacion_classical %>% mutate(
+    Método = "Classical Monte Carlo",
+    Var = estimacion_varianza_classical
+  ),
+  datos_simulacion_antiteticas %>% mutate(
+    Método = "Variables Antitéticas",
+    Var = estimacion_varianza_antitetica
+  ),
+  datos_simulacion_IS %>% mutate(
+    Método = "Muestreo por importancia",
+    Var = estimacion_varianza_IS
+  )
+)
+
+
+# COTA SUPERIOR PROBABILÍSTICA DEL ERROR ABSOLUTO DE LAS ESTIMACIONES
+
+f_teorica <- function(x, var) {
+  cuantil * sqrt(var) / sqrt(x)
+}
+
+
+
+#COMPARATIVA CONVERGENCIA
+
+ggplot(datos_unificados_error, aes(x = Tamaños, y = Estimacion, color = "Estimación")) +
+  geom_line(linewidth = 0.8) +
+  geom_hline(aes(yintercept = valor_real_integral, color = "Valor real"), linewidth = 1) +
+  scale_color_manual(values = c("Estimación" = "blue", "Valor real" = "red")) +
+  facet_wrap(~Método, ncol = 3, scales = "free_y") +
+  labs(
+    title = "Convergencia estimaciones métodos de Montecarlo",
+    x = "Tamaño muestral",
+    y = "",
+    color = ""
+  ) +
+  theme_gray() +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5)
+  )
+
+#GRÁFICO CONTRASTE CONVERGENCIA
+
+ggplot(datos_unificados_error,
+       aes(x = Tamaños, y = Estimacion, color = Método)) +
+  
+  geom_line(aes(alpha = Método),
+            linewidth = 1.2) +
+  
+  geom_hline(yintercept = valor_real_integral,
+             color = "red", linewidth = 1) +
+  
+  coord_cartesian(
+    ylim = c(valor_real_integral - 0.01,
+             valor_real_integral + 0.01)
+  ) +
+  
+  scale_color_manual(values = c(
+    "Classical Monte Carlo" = "#D32F2F",      # rojo intenso
+    "Variables Antitéticas" = "#1976D2",      # azul saturado
+    "Muestreo por importancia"   = "#2E7D32"       # verde oscuro brillante
+  )) +
+  
+  scale_alpha_manual(values = c(
+    "Classical Monte Carlo" = 0.22,
+    "Variables Antitéticas" = 0.41,
+    "Muestreo por importancia"   = 1.2
+  )) +
+  
+  labs(
+    title = "Contraste convergencias métodos de Montecarlo",
+    x = "Tamaño muestral",
+    y = "Estimación"
+  ) +
+  
+  theme_bw() +  # fondo blanco y líneas finas
+  theme(
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    legend.position = "bottom",
+    panel.grid.major = element_line(color = "grey85", linewidth = 0.3),
+    panel.grid.minor = element_blank()
+  )
+
+
+
+
+
+#COMPARATIVA ERROR (ESCALA LOGARÍTMICA)
+
+ggplot(datos_unificados_error, aes(x = Tamaños)) +
+  geom_line(aes(y = abs(Error), color = "Empírico"), linewidth = 1) +
+  
+  # Curvas teóricas por método
+  stat_function(
+    data = datos_unificados_error %>% filter(Método == "Classical Monte Carlo"),
+    aes(color = "Teórico"),
+    fun = function(x) f_teorica(x, estimacion_varianza_classical),
+    linewidth = 1,
+    linetype = "dashed"
+  ) +
+  stat_function(
+    data = datos_unificados_error %>% filter(Método == "Variables Antitéticas"),
+    aes(color = "Teórico"),
+    fun = function(x) f_teorica(x, estimacion_varianza_antitetica),
+    linewidth = 1,
+    linetype = "dashed"
+  ) +
+  stat_function(
+    data = datos_unificados_error %>% filter(Método == "Muestreo por importancia"),
+    aes(color = "Teórico"),
+    fun = function(x) f_teorica(x, estimacion_varianza_IS),
+    linewidth = 1,
+    linetype = "dashed"
+  ) +
+  
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_color_manual(values = c("Empírico" = "blue", "Teórico" = "red")) +
+  
+  facet_wrap(~Método, ncol = 3, scales = "free_y") +
+  
+  labs(
+    title = "Errores muestrales absolutos métodos de Montecarlo (log–log)",
+    x = "Tamaño muestral",
+    y = "",
+    color = ""
+  ) +
+  theme_gray() +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5)
+  )
+
+
+
+# CONTRASTE NORMALIDAD ERRORES ASINTÓTICOS
+
+#De cada método, escogemos los errores de los últimos 200 tamaños muestrales y los estandarizamos:
+
+errores_grandes <- datos_unificados_error %>%
+  group_by(Método) %>%
+  slice(400:600) %>%  
+  ungroup() %>% 
+  mutate(error_estandarizado=case_when(#Estandarizamos los errores para contrastar su normalidad estándar asintótica.
+    Método=="Classical Monte Carlo" ~ Error/(sqrt(Var)/sqrt(Tamaños)),
+    Método=="Variables Antitéticas" ~ Error/(sqrt(Var)/sqrt(Tamaños)),
+    Método=="Muestreo por importancia" ~ Error/(sqrt(Var)/sqrt(Tamaños)),
+    TRUE ~ NA_real_
+  ))
+
+
+#A continuación, creamos dos gráficos guardados en dos variables para luego combinarlos:
+
+#Histogramas frecuencias errores
+
+p_hist=ggplot(errores_grandes, aes(x = error_estandarizado)) +
+  geom_histogram(
+    aes(y = after_stat(density)),
+    bins = 30,
+    fill = "green",
+    color = "white",
+    alpha = 0.8
+  ) +
+  facet_wrap(~Método, ncol = 1, scales = "free") +
+  labs(
+    title = "Histogramas",
+    x = "Error",
+    y = ""
+  ) +
+  theme_gray() +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5)
+  )
+
+#QQ-plots respecto a la N(0,1)
+
+p_qq=ggplot(errores_grandes, aes(sample = error_estandarizado)) +
+  
+  # Bandas de confianza
+  qqplotr::stat_qq_band(
+    distribution = "norm",
+    dparams = list(mean = 0, sd = 1),
+    conf = 0.95,
+    alpha = 0.5,
+    fill = "blue"
+  ) +
+  
+  # Puntos del QQ-plot
+  ggplot2::stat_qq(
+    distribution = stats::qnorm,
+    dparams = list(mean = 0, sd = 1),
+    color = "black",
+    size = 1
+  ) +
+  
+  # Línea teórica
+  ggplot2::stat_qq_line(
+    distribution = stats::qnorm,
+    dparams = list(mean = 0, sd = 1),
+    color = "red",
+    linewidth = 1
+  ) +
+  
+  facet_wrap(~Método, ncol = 1, scales = "free") +
+  
+  labs(
+    title = "QQ\u2013plots",
+    x = "Cuantiles teóricos",
+    y = "Cuantiles muestrales"
+  ) +
+  
+  theme_gray() +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5)
+  )
+
+
+# Combinar: izquierda hist, derecha QQ
+# -------------------------
+p_hist | p_qq
+
+#TABLA CONTRASTES DE HIPÓTESIS
+
+#Por método, contrastamos la normalidad con una batería de contrastes de hipótesis:
+
+resultados_CH_normalidad=errores_grandes %>% group_by(Método) %>% 
+  summarise(P_valor_SW=shapiro.test(error_estandarizado)$p.value,
+            P_valor_KSL=nortest::lillie.test(error_estandarizado)$p.value,
+            P_valor_AD=nortest::ad.test(error_estandarizado)$p.value,
+            P_valor_Pearson=nortest::pearson.test(error_estandarizado)$p.value) %>% 
+  ungroup()
+
+#Mostramos los resultados por consola:
+
+resultados_CH_normalidad
+
+
+
+
+
+
+
