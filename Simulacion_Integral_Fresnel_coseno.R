@@ -43,7 +43,7 @@ generador_congruencial=function(a=39062953,c=37777373,M=2^32,semilla,N){#Definim
 #Según nuestro diseño experimental, definimos los siguientes parámetros de uso común:
 
 n=10000#Tamaño máximo de las muestras.
-sizes=seq(1,n,by=20)#Conjunto de tamaños muestrales con tamaño de paso 10.
+sizes=seq(1,n,by=20)#Conjunto de tamaños muestrales con tamaño de paso 20.
 cuantil=qnorm(1-0.05/2,mean = 0,sd=1)#Cuantil de la cota probabilística del error absoluto con un nivel de significación de 0.05.
 valor_real_integral=integrate(function(x){#Valor exacto de la integral de Fresnel C(1)
   eval(expression(cos(x^2)),list(x=x))
