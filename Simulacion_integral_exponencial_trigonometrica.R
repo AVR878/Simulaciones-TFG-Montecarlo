@@ -1,6 +1,6 @@
 #En primer lugar instalamos, si hiciera falta, y cargamos las librerías necesarias:
 
------------------------------------------------------------------------------------------
+
 #INSTALACIÓN:
 
 paquetes <- c("dplyr","ggplot2","qqplotr","patchwork","nortest","magrittr")
@@ -19,7 +19,7 @@ library(magrittr)
 
 options(digits = 10)#Controlamos la precisión.
 
------------------------------------------------------------------------------------------
+
 
 #GENERADOR CONGRUENCIAL
 
@@ -40,7 +40,6 @@ generador_congruencial=function(a=39062953,c=37777373,M=2^32,semilla,N){#Definim
 }
 
 
---------------------------------------------------------------------------------------------
   
 #PARÁMETROS COMUNES
 
@@ -58,7 +57,6 @@ f=function(x){
 #Y calculamos el valor real de la integral:
 valor_real_integral=integrate(f,0,1)$value
 
-------------------------------------------------------------------------------------
 
 #MÉTODO MONTECARLO CLÁSICO
 
@@ -112,7 +110,7 @@ datos_simulacion_classical=data.frame(Tamaños=sizes,
                                       Estimacion=vector_estimaciones_classical,
                                       Error=errores_classical)
 
------------------------------------------------------------------------------------------
+
 
 #MÉTODO VARIABLES ANTITÉTICAS
 
@@ -165,7 +163,7 @@ datos_simulacion_antiteticas=data.frame(Tamaños=sizes,
                                         Error=errores_antiteticas)
 
 
-------------------------------------------------------------------------------------------
+
 
 
 
@@ -258,7 +256,7 @@ datos_simulacion_IS=data.frame(Tamaños=sizes,
 
 
 
-----------------------------------------------------------------------------------------
+
 
 #DATOS UNIFICADOS
 
@@ -280,7 +278,7 @@ datos_unificados_error <- bind_rows(
 )
 
 
--------------------------------------------------------------------------------------------
+
   
 #COMPARACIÓN VARIANZAS
 
@@ -312,7 +310,7 @@ rownames(matriz_comparacion_varianzas) <- c("MC", "IS", "ANT")
 round(matriz_comparacion_varianzas)
 
 
---------------------------------------------------------------------------------------------------
+
 
 # COTA SUPERIOR PROBABILÍSTICA DEL ERROR ABSOLUTO DE LAS ESTIMACIONES
 
@@ -433,7 +431,7 @@ ggplot(datos_unificados_error, aes(x = Tamaños)) +
     plot.title = element_text(size = 14, face = "bold", hjust = 0.5)
   )
 
------------------------------------------------------------------------------------------------------
+
 
 # CONTRASTE NORMALIDAD ERRORES ASINTÓTICOS
 
@@ -555,7 +553,7 @@ p_qq=ggplot(error_asintotico_por_metodo, aes(sample = Error_estandarizado)) +
 p_hist | p_qq
 
 
------------------------------------------------------------------------------------------
+
 
 #TABLA CONTRASTES DE HIPÓTESIS
 
