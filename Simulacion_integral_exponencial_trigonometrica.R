@@ -477,7 +477,7 @@ error_asintotico_por_metodo=data.frame(Método=metodo,
   ))
 
 
-#A continuación, creamos dos gráficos guardados en dos variables para luego combinarlos:
+
 
 #Histogramas frecuencias errores
 
