@@ -15,7 +15,7 @@ Con la finalidad de que el lector pueda reproducir los resultados de las simulac
 - **Rtools**: conjunto de herramientas de desarrollo necesarias para compilar paquetes de R en sistemas Windows. Incluye utilidades como `gcc`, `make` y otros compiladores que permiten instalar paquetes que contienen código en C, C++ o Fortran.
 - **RStudio**: entorno de desarrollo integrado (IDE) para R que facilita la edición de scripts, la gestión de proyectos, la visualización de gráficos y la ejecución interactiva del código. Proporciona una interfaz más cómoda y estructurada para trabajar con R.
 
-los cuales, respectivamente y siguiendo el orden expuesto, se descargan a través de los enlaces web que siguen:
+los cuales, respectivamente, se descargan a través de los enlaces web que siguen:
 
 - R: https://cran.r-project.org  
 - Rtools: https://cran.r-project.org/bin/windows/Rtools  
