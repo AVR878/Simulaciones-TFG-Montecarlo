@@ -443,7 +443,7 @@ errores_asintoticos_clasico=c()
 errores_asintoticos_IS=c()
 errores_asintoticos_antiteticas=c()
 
-for (i in 1:replicas) {#Nótese que lo que hace diferente a cada error es la distinta elección de la semilla de cada generador en cada réplica.
+for (i in 1:replicas) {
   
   error_as_clasico=classiccal_montecarlo(muestra_uniforme = generador_congruencial(semilla = 47*i,N=tamaño_fijo))-valor_real_integral
   error_as_antiteticas=antiteticas_montecarlo(muestra_uniforme = generador_congruencial(semilla = 67*i,N=tamaño_fijo))-valor_real_integral
