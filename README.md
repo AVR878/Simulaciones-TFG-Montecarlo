@@ -30,7 +30,7 @@ En particular, los cálculos de las simulaciones están representados por los si
 - **Simulación I**: *Muestra_pseudo_uniforme.R* y *Muestra_pseudo_normal.R*.
 - **Simulación II**: *Simulacion_integral_exponencial_trigonometrica.R*.
 
-Todos ellos, están exhaustivamente comentados para que el lector pueda saber, en todo momento, qué esta haciendo cada parte del código; en consecuencia, se recomienda encarecidamente la **lectura previa de los comentarios** para hacer un correcto seguimiento de las ejecuciones por consola.
+Todos ellos, están exhaustivamente comentados para que el lector pueda saber, en todo momento, qué está haciendo cada parte del código; en consecuencia, se recomienda encarecidamente la **lectura previa de los comentarios** para hacer un correcto seguimiento de las ejecuciones por consola.
 
 Por último, detallamos los pasos a seguir para reproducir los resultados de las simulaciones reflejados en la memoria final:
 
